@@ -171,6 +171,7 @@ export default class GridItem extends React.Component<Props, State> {
 
   currentNode: HTMLElement;
 
+  // eslint-disable-next-line react/no-deprecated
   componentWillReceiveProps(nextProps: Props) {
     const { droppingPosition } = nextProps;
     const { dragging } = this.state;
