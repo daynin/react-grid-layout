@@ -67,6 +67,10 @@ class ShowcaseLayout extends React.Component {
     });
   };
 
+  onDrop = elemParams => {
+    alert(`Element parameters: ${JSON.stringify(elemParams)}`);
+  };
+
   render() {
     return (
       <div>
@@ -84,11 +88,15 @@ class ShowcaseLayout extends React.Component {
         <button onClick={this.onCompactTypeChange}>
           Change Compaction Type
         </button>
+        <div className="droppable-element" draggable={true} unselectable="on">
+          Droppable Element
+        </div>
         <ResponsiveReactGridLayout
           {...this.props}
           layouts={this.state.layouts}
           onBreakpointChange={this.onBreakpointChange}
           onLayoutChange={this.onLayoutChange}
+          onDrop={this.onDrop}
           // WidthProvider option
           measureBeforeMount={false}
           // I like to have it animate on mount. If you don't, delete `useCSSTransforms` (it's default `true`)
@@ -96,6 +104,7 @@ class ShowcaseLayout extends React.Component {
           useCSSTransforms={this.state.mounted}
           compactType={this.state.compactType}
           preventCollision={!this.state.compactType}
+          isDroppable={true}
         >
           {this.generateDOM()}
         </ResponsiveReactGridLayout>
