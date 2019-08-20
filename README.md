@@ -292,6 +292,11 @@ rowHeight: ?number = 150,
 //  h - height of an element
 droppingItem?: { i: string, w: number, h: number }
 
+// You can pass a value with a shift of dropping position,
+// which allows to correct the difference between dropping item
+// and the dropping "shadow" positions
+droppingPositionShift?: { x: number, y: number }
+
 //
 // Flags
 //

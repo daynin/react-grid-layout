@@ -66,6 +66,7 @@ export type Props = {
   preventCollision: boolean,
   useCSSTransforms: boolean,
   droppingItem: $Shape<LayoutItem>,
+  droppingPositionShift: { x: number, y: number },
 
   // Callbacks
   onLayoutChange: Layout => void,
@@ -202,6 +203,11 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       h: PropTypes.number.isRequired
     }),
 
+    droppingPositionShift: PropTypes.shape({
+      x: PropTypes.number.isRequired,
+      y: PropTypes.number.isRequired
+    }),
+
     // Children must not have duplicate keys.
     children: function(props: Props, propName: string) {
       var children = props[propName];
@@ -244,6 +250,10 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       i: "__dropping-elem__",
       h: 1,
       w: 1
+    },
+    droppingPositionShift: {
+      x: 0,
+      y: 0
     },
     onLayoutChange: noop,
     onDragStart: noop,
@@ -663,10 +673,11 @@ export default class ReactGridLayout extends React.Component<Props, State> {
   }
 
   onDragOver = (e: DragOverEvent) => {
-    const { droppingItem } = this.props;
+    const { droppingItem, droppingPositionShift } = this.props;
+    const { x: shiftX = 0, y: shiftY = 0 } = droppingPositionShift;
     const { layout } = this.state;
     const { layerX, layerY } = e.nativeEvent;
-    const droppingPosition = { x: layerX, y: layerY, e };
+    const droppingPosition = { x: layerX + shiftX, y: layerY + shiftY, e };
 
     if (!this.state.droppingElem) {
       this.setState({
