@@ -171,12 +171,11 @@ export default class GridItem extends React.Component<Props, State> {
 
   currentNode: HTMLElement;
 
-  // eslint-disable-next-line react/no-deprecated
-  componentWillReceiveProps(nextProps: Props) {
-    const { droppingPosition } = nextProps;
+  componentDidUpdate(prevProps: Props) {
+    const { droppingPosition } = this.props;
     const { dragging } = this.state;
 
-    if (!droppingPosition || !this.props.droppingPosition) {
+    if (!droppingPosition || !prevProps.droppingPosition) {
       return;
     }
 
@@ -192,8 +191,8 @@ export default class GridItem extends React.Component<Props, State> {
         deltaY: droppingPosition.y
       });
     } else if (
-      (dragging && droppingPosition.x !== this.props.droppingPosition.x) ||
-      droppingPosition.y !== this.props.droppingPosition.y
+      (dragging && droppingPosition.x !== prevProps.droppingPosition.x) ||
+      droppingPosition.y !== prevProps.droppingPosition.y
     ) {
       const deltaX = droppingPosition.x - dragging.left;
       const deltaY = droppingPosition.y - dragging.top;

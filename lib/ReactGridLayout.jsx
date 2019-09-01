@@ -42,7 +42,11 @@ type State = {
   oldLayout: ?Layout,
   oldResizeItem: ?LayoutItem,
   droppingElem: ?ReactElement<any>,
-  droppingPosition?: DroppingPosition
+  droppingPosition?: DroppingPosition,
+  // Mirrored props
+  children: ReactChildrenArray<ReactElement<any>>,
+  compactType?: CompactType,
+  propsLayout?: Layout
 };
 
 export type Props = {
@@ -54,7 +58,7 @@ export type Props = {
   draggableCancel: string,
   draggableHandle: string,
   verticalCompact: boolean,
-  compactType: ?("horizontal" | "vertical"),
+  compactType: CompactType,
   layout: Layout,
   margin: [number, number],
   containerPadding: [number, number] | null,
@@ -85,6 +89,12 @@ export type Props = {
   children: ReactChildrenArray<ReactElement<any>>
 };
 // End Types
+
+const compactType = (props: ?Object): CompactType => {
+  const { verticalCompact, compactType } = props || {};
+
+  return verticalCompact === false ? null : compactType;
+};
 
 /**
  * A reactive, fluid grid layout with draggable, resizable components.
@@ -272,13 +282,14 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       this.props.children,
       this.props.cols,
       // Legacy support for verticalCompact: false
-      this.compactType()
+      compactType(this.props)
     ),
     mounted: false,
     oldDragItem: null,
     oldLayout: null,
     oldResizeItem: null,
-    droppingElem: null
+    droppingElem: null,
+    children: []
   };
 
   constructor(props: Props, context: any): void {
@@ -300,21 +311,20 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     this.onLayoutMaybeChanged(this.state.layout, this.props.layout);
   }
 
-  // eslint-disable-next-line react/no-deprecated
-  componentWillReceiveProps(nextProps: Props) {
+  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
     let newLayoutBase;
     // Legacy support for compactType
     // Allow parent to set layout directly.
     if (
-      !isEqual(nextProps.layout, this.props.layout) ||
-      nextProps.compactType !== this.props.compactType
+      !isEqual(nextProps.layout, prevState.propsLayout) ||
+      nextProps.compactType !== prevState.compactType
     ) {
       newLayoutBase = nextProps.layout;
-    } else if (!childrenEqual(this.props.children, nextProps.children)) {
+    } else if (!childrenEqual(nextProps.children, prevState.children)) {
       // If children change, also regenerate the layout. Use our state
       // as the base in case because it may be more up to date than
       // what is in props.
-      newLayoutBase = this.state.layout;
+      newLayoutBase = prevState.layout;
     }
 
     // We need to regenerate the layout.
@@ -323,12 +333,27 @@ export default class ReactGridLayout extends React.Component<Props, State> {
         newLayoutBase,
         nextProps.children,
         nextProps.cols,
-        this.compactType(nextProps)
+        compactType(nextProps)
       );
-      const oldLayout = this.state.layout;
-      this.setState({ layout: newLayout });
-      this.onLayoutMaybeChanged(newLayout, oldLayout);
+
+      return {
+        layout: newLayout,
+        // We need to save these props to state for using
+        // getDerivedStateFromProps instead of componentDidMount (in which we would get extra rerender)
+        compactType: nextProps.compactType,
+        children: nextProps.children,
+        propsLayout: nextProps.layout
+      };
     }
+
+    return null;
+  }
+
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    const newLayout = this.state.layout;
+    const oldLayout = prevState.layout;
+
+    this.onLayoutMaybeChanged(newLayout, oldLayout);
   }
 
   /**
@@ -347,11 +372,6 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       containerPaddingY * 2 +
       "px"
     );
-  }
-
-  compactType(props: ?Object): CompactType {
-    if (!props) props = this.props;
-    return props.verticalCompact === false ? null : props.compactType;
   }
 
   /**
@@ -409,14 +429,14 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       y,
       isUserAction,
       this.props.preventCollision,
-      this.compactType(),
+      compactType(this.props),
       cols
     );
 
     this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
 
     this.setState({
-      layout: compact(layout, this.compactType(), cols),
+      layout: compact(layout, compactType(this.props), cols),
       activeDrag: placeholder
     });
   }
@@ -445,14 +465,14 @@ export default class ReactGridLayout extends React.Component<Props, State> {
       y,
       isUserAction,
       preventCollision,
-      this.compactType(),
+      compactType(this.props),
       cols
     );
 
     this.props.onDragStop(layout, oldDragItem, l, null, e, node);
 
     // Set state
-    const newLayout = compact(layout, this.compactType(), cols);
+    const newLayout = compact(layout, compactType(this.props), cols);
     const { oldLayout } = this.state;
     this.setState({
       activeDrag: null,
@@ -534,7 +554,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
 
     // Re-compact the layout and set the drag placeholder.
     this.setState({
-      layout: compact(layout, this.compactType(), cols),
+      layout: compact(layout, compactType(this.props), cols),
       activeDrag: placeholder
     });
   }
@@ -547,7 +567,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     this.props.onResizeStop(layout, oldResizeItem, l, null, e, node);
 
     // Set state
-    const newLayout = compact(layout, this.compactType(), cols);
+    const newLayout = compact(layout, compactType(this.props), cols);
     const { oldLayout } = this.state;
     this.setState({
       activeDrag: null,
@@ -712,7 +732,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     const { x, y, w, h } = layout.find(l => l.i === droppingItem.i) || {};
     const newLayout = compact(
       layout.filter(l => l.i !== droppingItem.i),
-      this.compactType(),
+      compactType(this.props),
       cols
     );
 
